@@ -921,6 +921,7 @@ exports.build_explicit_api_params = (public_id, options = {})->
     image_metadata: utils.as_safe_bool(options.image_metadata)
     invalidate: utils.as_safe_bool(options.invalidate)
     moderation: options.moderation
+    ocr: options.ocr
     phash: utils.as_safe_bool(options.phash)
     public_id: public_id
     responsive_breakpoints: utils.generate_responsive_breakpoints_string(options.responsive_breakpoints)

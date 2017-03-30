@@ -319,8 +319,6 @@ describe "uploader", ->
         expect(info.context.custom.alt).to.eql("alternative")
         done()
 
-
-       
   it "should support requesting manual moderation", (done) ->
     cloudinary.v2.uploader.upload IMAGE_FILE, moderation: "manual", tags: UPLOAD_TAGS, (error, result) ->
       expect(result.moderation[0].status).to.eql("pending")
@@ -361,6 +359,19 @@ describe "uploader", ->
       expect(error?).to.be true
       expect(error.message).to.contain "Must use"
       done()
+  describe "ocr", ->
+    track = "ocr"
+    spy = undefined
+    xhr = undefined
+    before ->
+      xhr = sinon.useFakeXMLHttpRequest()
+      spy = sinon.spy(ClientRequest.prototype, 'write')
+    after ->
+      spy.restore()
+      xhr.restore()
+    it "should support requesting ocr", () ->
+      cloudinary.v2.uploader.upload IMAGE_FILE, ocr: 'adv_ocr'
+      sinon.assert.calledWith(spy, sinon.match((arg)-> arg.toString().match(/name="ocr"\s*adv_ocr/)))
 
 
   describe "upload_chunked", ()->
@@ -487,6 +498,10 @@ describe "uploader", ->
       it "should should pass the invalidate value to the server", ()->
         cloudinary.v2.uploader.explicit "cloudinary", type: "twitter_name", eager: [crop: "scale", width: "2.0"], invalidate: true, tags: [TEST_TAG]
         sinon.assert.calledWith(spy, sinon.match((arg)-> arg.toString().match(/name="invalidate"\s*1/)))
+    describe "ocr", ->
+      it "should should pass the ocr value to the server", ()->
+        cloudinary.v2.uploader.explicit "cloudinary", type: "twitter_name", eager: [crop: "scale", width: "2.0"], ocr: "adv_ocr", tags: [TEST_TAG]
+        sinon.assert.calledWith(spy, sinon.match((arg)-> arg.toString().match(/name="ocr"\s*adv_ocr/)))
 
   it "should create an image upload tag with required properties", () ->
     @timeout helper.TIMEOUT_LONG
