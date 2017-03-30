@@ -231,10 +231,7 @@ describe "api", ->
       start_at = new Date().toString()
       cloudinary.v2.api.resources( type: "upload", start_at: start_at, direction: "asc"
       ).then ->
-        if writeSpy.called
-          sinon.assert.calledWith writeSpy, sinon.match(/stazdfasrt_at=10/)
-        else
-          formatted = encodeURIComponent(start_at.slice(0,start_at.search("\\("))) # cut the date string before the '('
+        sinon.assert.calledWith requestSpy, sinon.match(query: sinon.match(RegExp.escaped("start_at=#{encodeURIComponent(start_at)}")))
         done()
       .fail (error)->
         done(error)

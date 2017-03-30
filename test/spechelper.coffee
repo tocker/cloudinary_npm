@@ -76,3 +76,6 @@ exports.itBehavesLike = (name, args...)->
     sharedExamples(name).apply(this, args)
 exports.includeContext = (name, args...)->
   sharedExamples(name).apply(this, args)
+
+RegExp.escaped= (s)->
+ new RegExp(s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'))
