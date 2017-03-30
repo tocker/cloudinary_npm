@@ -164,6 +164,21 @@ describe "utils", ->
         "http://res.cloudinary.com/#{cloud_name}/image/upload/c_crop,g_auto:custom_no_override,h_100,w_100/test",
         {width: 100, height: 100})
 
+    it "should support auto:ocr_text", ->
+      test_cloudinary_url("test", {width:100, height:100, crop:'crop', gravity:"auto:ocr_text"},
+        "http://res.cloudinary.com/test123/image/upload/c_crop,g_auto:ocr_text,h_100,w_100/test",
+        {width: 100, height: 100})
+
+    it "should support ocr_text", ->
+      test_cloudinary_url("test", {width:100, height:100, crop:'crop', gravity:"ocr_text"},
+        "http://res.cloudinary.com/test123/image/upload/c_crop,g_ocr_text,h_100,w_100/test",
+        {width: 100, height: 100})
+
+    it "should support ocr_text:<engine>", ->
+      test_cloudinary_url("test", {width:100, height:100, crop:'crop', gravity:"ocr_text:adv_ocr"},
+        "http://res.cloudinary.com/test123/image/upload/c_crop,g_ocr_text:adv_ocr,h_100,w_100/test",
+        {width: 100, height: 100})
+
   describe "transformation", ->
     it "should support named transformation" , ->
       test_cloudinary_url("test", {transformation:"blip"}, "http://res.cloudinary.com/#{cloud_name}/image/upload/t_blip/test", {})
