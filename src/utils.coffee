@@ -161,14 +161,15 @@ process_layer = (layer)->
         re = /\$\([a-zA-Z]\w*\)/g
         start = 0
 #        textSource = text.replace(new RegExp("[,/]", 'g'), (c)-> "%#{c.charCodeAt(0).toString(16).toUpperCase()}")
-        textSource = smart_escape(text, /[,/]/g)
+        textSource = smart_escape(decodeURIComponent(text), /[,/]/g)
         text = ""
         while res = re.exec(textSource)
           text += smart_escape(textSource.slice(start, res.index))
           text += res[0]
           start = res.index + res[0].length
-        text += smart_escape(textSource.slice(start))
-
+        text += encodeURIComponent(textSource.slice(start))
+        # console.log("NADAV = #{text}")
+    # console.log("NADAV = #{text}")
     components.push(resource_type) if resource_type != "image"
     components.push(type) if type != "upload"
     components.push(style)
@@ -244,6 +245,15 @@ exports.encode_double_array = (array) ->
 exports.encode_key_value = (arg) ->
   if _.isObject(arg)
     pairs = for k, v of arg
+      "#{k}=#{v}"
+    pairs.join("|")
+  else
+    arg
+
+exports.encode_context = (arg) ->
+  if _.isObject(arg)
+    pairs = for k, v of arg
+      v = v.replace /([=|])/g, (match)-> "\\#{match}"
       "#{k}=#{v}"
     pairs.join("|")
   else
@@ -341,6 +351,7 @@ exports.generate_transformation_string = (options) ->
     e: normalize_expression(effect)
     fl: flags
     h: normalize_expression(height)
+    ki: normalize_expression(utils.option_consume(options, "keyframe_interval"))
     l: overlay
     o: normalize_expression(utils.option_consume(options, "opacity"))
     q: normalize_expression(utils.option_consume(options, "quality"))
@@ -414,11 +425,12 @@ exports.updateable_resource_params = (options, params = {}) ->
   params.auto_tagging = options.auto_tagging if options.auto_tagging?
   params.background_removal = options.background_removal if options.background_removal?
   params.categorization = options.categorization if options.categorization?
-  params.context = utils.encode_key_value(options.context) if options.context?
+  params.context = utils.encode_context(options.context) if options.context?
   params.custom_coordinates = utils.encode_double_array(options.custom_coordinates) if options.custom_coordinates?
   params.detection = options.detection if options.detection?
   params.face_coordinates = utils.encode_double_array(options.face_coordinates) if options.face_coordinates?
   params.headers = utils.build_custom_headers(options.headers) if options.headers?
+  params.notification_url = options.notification_url if options.notification_url?
   params.ocr = options.ocr if options.ocr?
   params.raw_convert = options.raw_convert if options.raw_convert?
   params.similarity_search = options.similarity_search if options.similarity_search?
@@ -505,7 +517,7 @@ finalize_source = (source, format, url_suffix) ->
     source = smart_escape(source)
     source_to_sign = source
   else
-    source = smart_escape(decodeURIComponent(source))
+    source = encodeURIComponent(decodeURIComponent(source)).replace(/%3A/g, ":").replace(/%2F/g, "/")
     source_to_sign = source
     if !!url_suffix
       throw new Error('url_suffix should not include . or /') if url_suffix.match(/[\.\/]/)
@@ -885,6 +897,7 @@ process_video_params = (param) ->
 # @private
 ###
 exports.archive_params = (options = {})->
+  allow_missing: exports.as_safe_bool(options.allow_missing)
   async: exports.as_safe_bool(options.async)
   flatten_folders: exports.as_safe_bool(options.flatten_folders)
   flatten_transformations: exports.as_safe_bool(options.flatten_transformations)
@@ -892,8 +905,9 @@ exports.archive_params = (options = {})->
   mode: options.mode
   notification_url: options.notification_url
   prefixes: options.prefixes && exports.build_array(options.prefixes)
-  transformations: utils.build_eager(options.transformations)
   public_ids: options.public_ids && exports.build_array(options.public_ids)
+  skip_transformation_name: exports.as_safe_bool(options.skip_transformation_name)
+  transformations: utils.build_eager(options.transformations)
   tags: options.tags && exports.build_array(options.tags)
   target_format: options.target_format
   target_public_id: options.target_public_id
