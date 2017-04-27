@@ -19,7 +19,7 @@ describe "search_api", ->
 
     it 'should always return same object in fluent interface',->
       instance = cloudinary.v2.search.instance()
-      for method in ['expression','sort_by','max_results','next_cursor','aggregate','includes'] 
+      for method in ['expression','sort_by','max_results','next_cursor','aggregate','with_field'] 
         same_instance = instance[method]('emptyarg')
         expect(instance).to.eql(same_instance)
 
@@ -41,14 +41,14 @@ describe "search_api", ->
       expect(query).to.eql(next_cursor: 'format:jpg')
 
 
-    it 'should add facets arguments as array to query',->
-      query = cloudinary.v2.search.aggregate('format', 'size_category').to_query()
+    it 'should add aggregate arguments as array to query',->
+      query = cloudinary.v2.search.aggregate('format').aggregate('size_category').to_query()
       expect(query).to.eql(aggregate: ['format', 'size_category'])
 
 
-    it 'should add includes to query',->
-      query = cloudinary.v2.search.includes('context', 'tags').to_query()
-      expect(query).to.eql(include: ['context', 'tags'])
+    it 'should add with_field to query',->
+      query = cloudinary.v2.search.with_field('context').with_field('tags').to_query()
+      expect(query).to.eql(with_field: ['context', 'tags'])
 
   describe "integration", ->
     before (done) ->
@@ -102,20 +102,19 @@ describe "search_api", ->
             expect(results['resources'].length).to.eql( 1 )
             expect(results['resources'][0]['public_id']).to.eql PUBLIC_ID_3
             expect(results['total_count']).to.eql(3)
+            expect(results['next_cursor']).to.eql(null)
 
-            cloudinary.v2.search.max_results(1).expression("tags:#{TEST_TAG}").sort_by('public_id', 'asc').next_cursor(results['next_cursor']).execute (err,results)->
-              expect(results['resources'].length).to.eql( 0 )
 
 
     it 'should include context',->
-      cloudinary.v2.search.expression("tags:#{TEST_TAG}").includes('context').execute (err,results)->
+      cloudinary.v2.search.expression("tags:#{TEST_TAG}").with_field('context').execute (err,results)->
         expect(results['resources'].length).to.eql( 3 )
         for res in results['resources']
           expect(Object.keys(res['context'])).to.eql ['stage']
       
 
     it 'should include context, tags and image_metadata',->
-      cloudinary.v2.search.expression("tags:#{TEST_TAG}").includes('context', 'tags', 'image_metadata').execute (err,results)->
+      cloudinary.v2.search.expression("tags:#{TEST_TAG}").with_field('context').with_field('tags').with_field('image_metadata').execute (err,results)->
         expect(results['resources'].length).to.eql( 3 )
         for res in results['resources']
           expect(Object.keys(res['context'])).to.eql ['stage']

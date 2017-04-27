@@ -3,7 +3,7 @@ _ = require('lodash')
 
 class Search
   constructor:()->
-    @query_hash = { sort_by: [], aggregate: [], include: [] }
+    @query_hash = { sort_by: [], aggregate: [], with_field: [] }
 
   @instance:()->
     new Search
@@ -17,11 +17,11 @@ class Search
   @next_cursor:(value)->
     @instance().next_cursor(value)
 
-  @aggregate:(values...)->
-    @instance().aggregate(values...)
+  @aggregate:(value)->
+    @instance().aggregate(value)
 
-  @includes:(values...)->
-    @instance().includes(values...)
+  @with_field:(value)->
+    @instance().with_field(value)
 
   @sort_by:(field_name,dir='desc')->
     @instance().sort_by(field_name,dir)
@@ -39,12 +39,12 @@ class Search
     @query_hash.next_cursor = value
     this
 
-  aggregate:(values...)->
-    @query_hash.aggregate.push(values...)
+  aggregate:(value)->
+    @query_hash.aggregate.push(value)
     this
 
-  includes:(values...)->
-    @query_hash.include.push(values...)
+  with_field:(value)->
+    @query_hash.with_field.push(value)
     this
 
   sort_by:(field_name, dir="desc")->
@@ -58,8 +58,11 @@ class Search
       delete @query_hash[k] if !_.isNumber(v) && _.isEmpty(v)
     @query_hash
 
-  execute:(callback)->
-    api.search(this.to_query(), callback)
+  execute:(options,callback)->
+    if callback==null
+      callback = options
+    options||= {}
+    api.search(this.to_query(),options, callback)
 
  module.exports = Search
 
