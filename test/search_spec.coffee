@@ -9,7 +9,7 @@ PUBLIC_ID = PUBLIC_ID_PREFIX + SUFFIX
 PUBLIC_ID_1 = PUBLIC_ID + "_1"
 PUBLIC_ID_2 = PUBLIC_ID + "_2"
 PUBLIC_ID_3 = PUBLIC_ID + "_3"
-TEST_TAG = 'npm_advanced_search'
+SEARCH_TAG = 'npm_advanced_search_' + SUFFIX
 
 describe "search_api", ->
   describe "unit", ->
@@ -55,12 +55,12 @@ describe "search_api", ->
       @timeout helper.TIMEOUT_LONG
 
       Q.allSettled [
-        cloudinary.v2.api.delete_resources_by_tag(TEST_TAG),
-        cloudinary.v2.uploader.upload(helper.IMAGE_FILE, public_id: PUBLIC_ID_1, tags: [helper.UPLOAD_TAGS...,TEST_TAG], context: "stage=in_review")
-        cloudinary.v2.uploader.upload(helper.IMAGE_FILE, public_id: PUBLIC_ID_2, tags: [helper.UPLOAD_TAGS...,TEST_TAG], context: "stage=new")
-        cloudinary.v2.uploader.upload(helper.IMAGE_FILE, public_id: PUBLIC_ID_3, tags: [helper.UPLOAD_TAGS...,TEST_TAG], context: "stage=validated")]
+        cloudinary.v2.uploader.upload(helper.IMAGE_FILE, public_id: PUBLIC_ID_1, tags: [helper.UPLOAD_TAGS...,SEARCH_TAG], context: "stage=in_review")
+        cloudinary.v2.uploader.upload(helper.IMAGE_FILE, public_id: PUBLIC_ID_2, tags: [helper.UPLOAD_TAGS...,SEARCH_TAG], context: "stage=new")
+        cloudinary.v2.uploader.upload(helper.IMAGE_FILE, public_id: PUBLIC_ID_3, tags: [helper.UPLOAD_TAGS...,SEARCH_TAG], context: "stage=validated")]
       .finally ->
-        setTimeout(done,2000)
+        setTimeout(done,3000) # wait for the server to update
+      true
 
     after (done)->
       @timeout helper.TIMEOUT_LONG
@@ -71,14 +71,13 @@ describe "search_api", ->
         if(!(config.api_key && config.api_secret))
           expect().fail("Missing key and secret. Please set CLOUDINARY_URL.")
 
-        Q.allSettled [
-          cloudinary.v2.api.delete_resources_by_tag TEST_TAG ]
-          .finally ->
-        done()
+        cloudinary.v2.api.delete_resources_by_tag( SEARCH_TAG).finally ->
+          done()
+      true
 
 
-    it "should return all images tagged with #{TEST_TAG}",->
-      cloudinary.v2.search.expression("tags:#{TEST_TAG}").execute (err,results)->
+    it "should return all images tagged with #{SEARCH_TAG}",->
+      cloudinary.v2.search.expression("tags:#{SEARCH_TAG}").execute (err,results)->
         expect(results['resources'].length).to.eql(3)
 
     it "should return resource #{PUBLIC_ID_1}",->
@@ -87,34 +86,34 @@ describe "search_api", ->
 
 
     it 'should paginate resources limited by tag and orderd by ascing public_id',->
-      instance = cloudinary.v2.search.max_results(1).expression("tags:#{TEST_TAG}").sort_by('public_id', 'asc')
+      instance = cloudinary.v2.search.max_results(1).expression("tags:#{SEARCH_TAG}").sort_by('public_id', 'asc')
       instance.execute  (err,results)->
         expect(results['resources'].length).to.eql( 1 )
         expect(results['resources'][0]['public_id']).to.eql PUBLIC_ID_1
         expect(results['total_count']).to.eql( 3 )
 
-        cloudinary.v2.search.max_results(1).expression("tags:#{TEST_TAG}").sort_by('public_id', 'asc').next_cursor(results['next_cursor']).execute (err,results)->
+        cloudinary.v2.search.max_results(1).expression("tags:#{SEARCH_TAG}").sort_by('public_id', 'asc').next_cursor(results['next_cursor']).execute (err,results)->
           expect(results['resources'].length).to.eql( 1 )
           expect(results['resources'][0]['public_id']).to.eql PUBLIC_ID_2
           expect(results['total_count']).to.eql(3)
 
-          cloudinary.v2.search.max_results(1).expression("tags:#{TEST_TAG}").sort_by('public_id', 'asc').next_cursor(results['next_cursor']).execute (err,results)->
+          cloudinary.v2.search.max_results(1).expression("tags:#{SEARCH_TAG}").sort_by('public_id', 'asc').next_cursor(results['next_cursor']).execute (err,results)->
             expect(results['resources'].length).to.eql( 1 )
             expect(results['resources'][0]['public_id']).to.eql PUBLIC_ID_3
             expect(results['total_count']).to.eql(3)
-            expect(results['next_cursor']).to.eql(null)
+            expect(results).not.to.have.key('next_cursor')
 
 
 
     it 'should include context',->
-      cloudinary.v2.search.expression("tags:#{TEST_TAG}").with_field('context').execute (err,results)->
+      cloudinary.v2.search.expression("tags:#{SEARCH_TAG}").with_field('context').execute (err,results)->
         expect(results['resources'].length).to.eql( 3 )
         for res in results['resources']
           expect(Object.keys(res['context'])).to.eql ['stage']
       
 
     it 'should include context, tags and image_metadata',->
-      cloudinary.v2.search.expression("tags:#{TEST_TAG}").with_field('context').with_field('tags').with_field('image_metadata').execute (err,results)->
+      cloudinary.v2.search.expression("tags:#{SEARCH_TAG}").with_field('context').with_field('tags').with_field('image_metadata').execute (err,results)->
         expect(results['resources'].length).to.eql( 3 )
         for res in results['resources']
           expect(Object.keys(res['context'])).to.eql ['stage']
